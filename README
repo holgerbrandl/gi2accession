@@ -1,0 +1,67 @@
+
+## Intro
+
+
+batch conversion requires downloading all files. See https://ncbiinsights.ncbi.nlm.nih.gov/2016/12/23/converting-lots-of-gi-numbers-to-accession-version/
+
+## Fetch the data
+
+```bash
+cd ~/gi_acc
+wget ftp://ftp.ncbi.nlm.nih.gov/genbank/livelists/gi2acc_mapping/gi2acc_lmdb.db.2017.01.04.0001.gz
+wget ftp://ftp.ncbi.nlm.nih.gov/genbank/livelists/gi2acc_mapping/gi2acc_lmdb.db.2017.01.04.0001.gz.*
+gunzip gi2acc_lmdb.db.2017.01.04.0001.gz
+
+ln -s gi2acc_lmdb.db.2017.01.04.0001 gi2acc_lmdb.db
+
+## also download the provided script
+wget ftp://ftp.ncbi.nlm.nih.gov/genbank/livelists/gi2acc_mapping/gi2accession.py
+
+## test the provided tool
+chmod u+x gi2accession.py 
+
+## install required python modules
+pip install lmdb
+
+echo 42 | ./gi2accession.py 
+
+
+
+```
+
+## Setup the REST application
+ 
+ 
+Just adopted from 
+* http://ssoudan.eu/posts/2014-12-08-kotlin-springboot.html
+
+With some addtional insights from 
+* http://www.thedevpiece.com/building-microservices-with-kotlin-and-springboot/
+* http://ssoudan.eu/posts/2014-12-08-kotlin-springboot.html
+
+There's just a single method that accepts a list of comma/semicolon separated GIs and returns a json structure with the mapping. Unmappable IDs are mapped to NA.
+
+
+
+To test the app use http://localhost:8080/gi2acc?gi=42
+
+## How to deploy the app into production?
+
+
+## How to integrate with bash
+
+http://stackoverflow.com/questions/1955505/parsing-json-with-unix-tools
+
+Use [jq](https://stedolan.github.io/jq/):
+
+```bash
+curl -s 'https://api.github.com/users/lambda' | jq -r '.name'
+
+```
+
+
+## How to integrate with R?
+
+
+
+
