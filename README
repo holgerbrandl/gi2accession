@@ -44,6 +44,9 @@ There's just a single method that accepts a list of comma/semicolon separated GI
 
 
 To test the app use http://localhost:8080/gi2acc?gi=42
+to test with multiple IDs use  http://localhost:8080/gi2acc?gi=123,2323,23,3
+to test with invalid IDs use  http://localhost:8080/gi2acc?gi=123,222,232,3
+
 
 ## How to deploy the app into production?
 
