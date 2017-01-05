@@ -24,7 +24,8 @@ repositories {
 
 // see https://kotlinlang.org/docs/tutorials/spring-boot-restful.html
 springBoot {
-    mainClass = 'de.mpicbg.scicomp.bioinfo.GI2AccessionService.ktGI2AccessionServiceKt'
+    mainClass = 'de.mpicbg.scicomp.bioinfo.GI2AccessionServiceKt'
+    executable = true
 }
 
 dependencies {

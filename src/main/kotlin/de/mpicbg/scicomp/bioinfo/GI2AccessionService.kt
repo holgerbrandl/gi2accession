@@ -19,7 +19,7 @@ import org.springframework.data.rest.core.annotation.RepositoryRestResource as R
 data class IdPair(val gi: Long, val accession: String, val seqLength: Long)
 
 // installation dir of ncbi provided pyton script and database
-val INSTALL_DIR = File("/Volumes/brandl/gi_acc")
+val INSTALL_DIR = File(System.getProperty("user.home"), "projects/gi_acc")
 
 
 @RestController
@@ -34,7 +34,7 @@ class IdConversionController {
         queryGis.saveAs(idListFile)
 
         // run the python script over the ids
-        val cmd = "cat ${idListFile.absolutePath} | ${INSTALL_DIR}/gi2accession.sh"
+        val cmd = "cat ${idListFile.absolutePath} | ${INSTALL_DIR}/gi2accession.py"
 
         val convertedIds: List<IdPair> = evalBash(cmd, wd = INSTALL_DIR).stdout.
                 filter(String::isNotBlank).
@@ -53,5 +53,8 @@ class IdConversionController {
 open class Application
 
 fun main(args: Array<String>) {
+    // http://stackoverflow.com/questions/21083170/spring-boot-how-to-configure-port
+    System.getProperties().put("server.port", 7050);
+
     SpringApplication.run(Application::class.java, *args)
 }

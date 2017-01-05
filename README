@@ -48,9 +48,31 @@ to test with multiple IDs use  http://localhost:8080/gi2acc?gi=123,2323,23,3
 to test with invalid IDs use  http://localhost:8080/gi2acc?gi=123,222,232,3
 
 
+http://bioinfo:8080/gi2acc?gi=123,222,232,3
+
+
 ## How to deploy the app into production?
 
+See http://docs.spring.io/spring-boot/docs/current/reference/html/deployment-install.html
 
+```bash
+## build it
+gradle build
+
+
+## deploy to server
+scp build/libs/gi2acc_service-1.0-SNAPSHOT.jar bioinfo:~/projects/gi_acc/gi2acc_service.jar
+
+## sudo adduser bootapp
+sudo chown bootapp:bootapp gi2acc_service.jar
+
+su bootapp
+chmod 500 gi2acc_service.jar ## only owner can read and write
+
+chmod +x gi2acc_service.jar  ## make executable
+./gi2acc_service.jar
+
+```
 ## How to integrate with bash
 
 http://stackoverflow.com/questions/1955505/parsing-json-with-unix-tools
