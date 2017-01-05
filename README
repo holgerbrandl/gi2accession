@@ -8,7 +8,6 @@ batch conversion requires downloading all files. See https://ncbiinsights.ncbi.n
 
 ```bash
 cd ~/gi_acc
-wget ftp://ftp.ncbi.nlm.nih.gov/genbank/livelists/gi2acc_mapping/gi2acc_lmdb.db.2017.01.04.0001.gz
 wget ftp://ftp.ncbi.nlm.nih.gov/genbank/livelists/gi2acc_mapping/gi2acc_lmdb.db.2017.01.04.0001.gz.*
 gunzip gi2acc_lmdb.db.2017.01.04.0001.gz
 
@@ -48,40 +47,59 @@ to test with multiple IDs use  http://localhost:8080/gi2acc?gi=123,2323,23,3
 to test with invalid IDs use  http://localhost:8080/gi2acc?gi=123,222,232,3
 
 
-http://bioinfo:8080/gi2acc?gi=123,222,232,3
-
+http://bioinformatics.mpi-cbg.de:7050/gi2acc?gi=123,222,232,3
+http://bioinformatics-srv1.mpi-cbg.de:7050/gi2acc?gi=123,222,232,3
 
 ## How to deploy the app into production?
 
-See http://docs.spring.io/spring-boot/docs/current/reference/html/deployment-install.html
+To deploy our micro-service into production we simply follow the spring-boot [deployment guidelines](http://docs.spring.io/spring-boot/docs/current/reference/html/deployment-install.html).  
 
 ```bash
-## build it
+## Build it
 gradle build
 
-
-## deploy to server
+## Copy to server
 scp build/libs/gi2acc_service-1.0-SNAPSHOT.jar bioinfo:~/projects/gi_acc/gi2acc_service.jar
 
-## sudo adduser bootapp
+## Use special user created with "sudo adduser bootapp" to increase app-security 
+## (see spring-boot docs link from above for details) 
 sudo chown bootapp:bootapp gi2acc_service.jar
 
 su bootapp
 chmod 500 gi2acc_service.jar ## only owner can read and write
+chmod +x gi2acc_service.jar  ## make it executable
 
-chmod +x gi2acc_service.jar  ## make executable
+## now we could just run it directly...
 ./gi2acc_service.jar
 
+
+## ... or install as an init.d service (recommended)
+sudo ln -s $(readlink -f gi2acc_service.jar) /etc/init.d/gi2acc
+
+## start the service
+sudo service gi2acc start
+sudo service gi2acc stop
 ```
-## How to integrate with bash
 
-http://stackoverflow.com/questions/1955505/parsing-json-with-unix-tools
 
-Use [jq](https://stedolan.github.io/jq/):
+## Workflow integration
+
+To use our new GI to accession conversion microservice, we most likely will use either bash or R. Let's start with R:
+
+### Map GIs in R
+
+```r
+
+
+### Map GIs in the shell
+
+There are [various solutions ](http://stackoverflow.com/questions/1955505/parsing-json-with-unix-tools)to process json in the shell. We recommend [jq](https://stedolan.github.io/jq/)
+```
+
 
 ```bash
+gi_nr=24
 curl -s 'https://api.github.com/users/lambda' | jq -r '.name'
-
 ```
 
 
@@ -90,3 +108,29 @@ curl -s 'https://api.github.com/users/lambda' | jq -r '.name'
 
 
 
+## References
+
+
+Self Education
+==============
+
+### write a kotlin microservice to remap gi numbers to accession
+
+https://ncbiinsights.ncbi.nlm.nih.gov/2016/12/23/converting-lots-of-gi-numbers-to-accession-version/
+
+see 
+* http://www.thedevpiece.com/building-microservices-with-kotlin-and-springboot/
+* and to access it http://tophcito.blogspot.de/2015/11/accessing-apis-from-r-and-little-r.html
+* http://ssoudan.eu/posts/2014-12-08-kotlin-springboot.html
+* http://stackoverflow.com/questions/2346794/java-fastest-way-to-do-random-reads-on-huge-disk-files
+* db conversion of big tables https://sqlite.org/cli.html or http://stackoverflow.com/questions/20724864/convert-a-sql-table-into-a-sqlite-database
+
+https://sqlite.org/cli.html
+
+http://docs.spring.io/spring-boot/docs/current/reference/html/deployment-install.html
+
+https://spring.io/blog/2016/02/15/developing-spring-boot-applications-with-kotlin
+
+https://github.com/sdeleuze/spring-boot-kotlin-demo
+
+https://dzone.com/articles/developing-a-geospatial-webservice-with-kotlin-and?utm_medium=feed&utm_source=feedpress.me&utm_campaign=Feed:%20dzone%2Fjava

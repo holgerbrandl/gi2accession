@@ -19,7 +19,9 @@ import org.springframework.data.rest.core.annotation.RepositoryRestResource as R
 data class IdPair(val gi: Long, val accession: String, val seqLength: Long)
 
 // installation dir of ncbi provided pyton script and database
-val INSTALL_DIR = File(System.getProperty("user.home"), "projects/gi_acc")
+//val INSTALL_DIR = File(System.getProperty("user.home"), "projects/gi_acc")
+val INSTALL_DIR = File("/home/brandl/projects/gi_acc")
+
 
 
 @RestController
@@ -46,7 +48,6 @@ class IdConversionController {
 
         return convertedIds
     }
-
 }
 
 @SpringBootApplication
