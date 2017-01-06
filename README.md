@@ -35,11 +35,11 @@ To avoid this tedious setup whenever we need to convert GIs, we now would like t
 
 The general concept about to get started with REST, Spring-Boot and Kotlin is described in 
 
-* https://spring.io/blog/2016/02/15/developing-spring-boot-applications-with-kotlin
-* http://www.thedevpiece.com/building-microservices-with-kotlin-and-springboot/
-* http://ssoudan.eu/posts/2014-12-08-kotlin-springboot.html
+* [https://spring.io/blog/2016/02/15/developing-spring-boot-applications-with-kotlin](https://spring.io/blog/2016/02/15/developing-spring-boot-applications-with-kotlin)
+* [http://www.thedevpiece.com/building-microservices-with-kotlin-and-springboot/](http://www.thedevpiece.com/building-microservices-with-kotlin-and-springboot/)
+* [http://ssoudan.eu/posts/2014-12-08-kotlin-springboot.html](http://ssoudan.eu/posts/2014-12-08-kotlin-springboot.html)
 
-So essentially all we need is a single method taking one or more GIs and returning a mapping scheme:
+So essentially all we need is a single method that accepts one or more GIs as input and which returns a mapping scheme.
 
 ```kotlin
 // value type to model python-script output
@@ -74,7 +74,9 @@ class IdConversionController {
                         IdPair(it.split(" ")[0].toLong(), null, null)
                     } else {
                         // example line: 34	X17614.1	1632
-                        with(it.split('\t')) { IdPair(this[0].toLong(), this[1], this[2].toLong()) }
+                        with(it.split('\t')) { 
+                            IdPair(this[0].toLong(), this[1], this[2].toLong()) 
+                        }
                     }
                 }
 
@@ -173,7 +175,6 @@ Using the conversion webservice from R can be easily done using [httr](https://g
 ```r
 library(httr)
 library(tidyverse)
-library(dplyr)
 
 ## define the queries
 GIs = list(23,5353,34)
@@ -205,9 +206,11 @@ http://stackoverflow.com/questions/32960857/how-to-convert-arbirtrary-simple-jso
 # install jq if not yet present: sudo apt-get install jq
 gi_nr=24,323
 
-curl -s "http://bioinfo.mpi-cbg.de:7050/gi2acc?gi=$gi_nr" | jq -r '(.[0] | keys) as $keys | $keys, map([.[ $keys[] ]])[] | @csv'
+curl -s "http://bioinfo.mpi-cbg.de:7050/gi2acc?gi=$gi_nr" | \
+    jq -r '(.[0] | keys) as $keys | $keys, map([.[ $keys[] ]])[] | @csv'
 ```
 which gives
+
 ```
 "accession","gi","seqLength"
 "X53812.1",24,422
@@ -234,12 +237,15 @@ val json = String(queryURL.httpGet().response().second.data)
 val jsonArray = Parser().parse(json.byteInputStream())!! as JsonArray<*>
 
 // use klaxon library to parse the json result (see https://github.com/cbeust/klaxon)
-val idMap = jsonArray.map { (it as JsonObject) }.map { it.int("gi") to it.string("accession") }
+val idMap = jsonArray.map { (it as JsonObject) }.map { 
+    it.int("gi") to it.string("accession") 
+}
 
 // print conversion table
 idMap.forEach { println(it) }
 ```
-which gives
+which outputs
+
 ```
 (23, X53811.1)
 (5353, null)
@@ -266,6 +272,7 @@ With little effort we could build, and deploy a spring-boot application providin
 The complete code is available unter [https://github.com/holgerbrandl/gi2accession](https://github.com/holgerbrandl/gi2accession)
 
 The described conversion service can be used via the following URL:
+
 ```
 http://java-srv1.mpi-cbg.de:7050/gi2acc?gi=23,5353,34
 ```
