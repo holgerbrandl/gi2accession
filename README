@@ -4,7 +4,9 @@
 
 batch conversion requires downloading all files. See https://ncbiinsights.ncbi.nlm.nih.gov/2016/12/23/converting-lots-of-gi-numbers-to-accession-version/
 
-## Fetch the data
+## Prepare the mapping model
+
+First, We simply pull the massive data file - which is a python [Lightning database](https://lmdb.readthedocs.io/en/release/) - to our local system and test the provided python tool to test the installation. 
 
 ```bash
 cd ~/gi_acc
@@ -20,35 +22,36 @@ wget ftp://ftp.ncbi.nlm.nih.gov/genbank/livelists/gi2acc_mapping/gi2accession.py
 chmod u+x gi2accession.py 
 
 ## install required python modules
+#sudo apt-get install python-dev
 pip install lmdb
 
+## try an example to test the installation
 echo 42 | ./gi2accession.py 
-
-
 
 ```
 
 ## Setup the REST application
- 
- 
-Just adopted from 
-* http://ssoudan.eu/posts/2014-12-08-kotlin-springboot.html
 
-With some addtional insights from 
+To avoid this tedious setup whenever we need to convert GIs, we would like to expose it via a tiny REST-api. The general concept about to get started with REST, Spring-Boot and Kotlin is described in 
+
+* https://spring.io/blog/2016/02/15/developing-spring-boot-applications-with-kotlin
 * http://www.thedevpiece.com/building-microservices-with-kotlin-and-springboot/
 * http://ssoudan.eu/posts/2014-12-08-kotlin-springboot.html
 
+
+
+
+**TODO code here**
+
 There's just a single method that accepts a list of comma/semicolon separated GIs and returns a json structure with the mapping. Unmappable IDs are mapped to NA.
 
+We notice and welcome the little boilerplate code required to turn it into a Spring-Boot ready application. Only a specially annotated `Application` class is needed which is used as an argument to `SpringApplication.run` in the main function of the kts. Kotlin makes it possible to keep everything in a single class here.
 
 
-To test the app use http://localhost:8080/gi2acc?gi=42
-to test with multiple IDs use  http://localhost:8080/gi2acc?gi=123,2323,23,3
-to test with invalid IDs use  http://localhost:8080/gi2acc?gi=123,222,232,3
+To test the app locally we can use use `http://localhost:7050/gi2acc?gi=42` or `http://localhost:7050/gi2acc?gi=123,222, 232,3` for multiple IDs.
 
+Check if also invalid GI are handled gracefully `http://localhost:7050/gi2acc?gi=23,5353,34`
 
-http://bioinformatics.mpi-cbg.de:7050/gi2acc?gi=123,222,232,3
-http://bioinformatics-srv1.mpi-cbg.de:7050/gi2acc?gi=123,222,232,3
 
 ## How to deploy the app into production?
 
@@ -60,16 +63,19 @@ gradle build
 
 ## Copy to server
 scp build/libs/gi2acc_service-1.0-SNAPSHOT.jar bioinfo:~/projects/gi_acc/gi2acc_service.jar
+scp build/libs/gi2acc_service-1.0-SNAPSHOT.jar java-srv1:/local/web/files/gi2acc_service/gi2acc_service.jar
+
+## change to deployment server target directory, and then 
+chmod o+x gi2acc_service.jar  ## make it executable
 
 ## Use special user created with "sudo adduser bootapp" to increase app-security 
 ## (see spring-boot docs link from above for details) 
 sudo chown bootapp:bootapp gi2acc_service.jar
+sudo chmod 500 gi2acc_service.jar  ## only owner can read and write
 
-su bootapp
-chmod 500 gi2acc_service.jar ## only owner can read and write
-chmod +x gi2acc_service.jar  ## make it executable
 
 ## now we could just run it directly...
+sudo su bootapp
 ./gi2acc_service.jar
 
 
@@ -81,56 +87,115 @@ sudo service gi2acc start
 sudo service gi2acc stop
 ```
 
+Test it `http://java-srv1.mpi-cbg.de:7050/gi2acc?gi=23,5353,34`
+
 
 ## Workflow integration
 
-To use our new GI to accession conversion microservice, we most likely will use either bash or R. Let's start with R:
+Finally, we'd lik to use our new GI to accession conversion microservice. Since most bioinformatic workflows live in R or the shell, we'll show integrations for both here. Let's start with R:
 
-### Map GIs in R
+### How to integrate with R?
 
+Using the conversion webservice from R can be easily done using [httr](https://github.com/hadley/httr) + [dplyr](https://github.com/hadley/dplyr) mixed with a bit of [purr](https://github.com/hadley/purrr):
 ```r
 
+library(httr)
+library(tidyverse)
+library(dplyr)
 
-### Map GIs in the shell
+## define the queries
+GIs = list(23,5353,34)
+
+## iterate over the queries, call the service, and bind the results into a data.frame
+idMap = map_df(GIs, function(gi_nr){
+#    gi_nr=5353
+    paste0("http://bioinfo.mpi-cbg.de:7050/gi2acc?gi=", gi_nr) %>% 
+        GET %>% 
+        content %>% 
+        flatten %>%
+        with(data.frame(gi=gi, accession= ifelse(is.null(accession), NA, accession)))
+}) 
+
+idMap
+#     gi accession
+# 1   23  X53811.1
+# 2 5353      <NA>
+# 3   34  X17614.1
+
+```
+
+
+### How to use it in bash?
 
 There are [various solutions ](http://stackoverflow.com/questions/1955505/parsing-json-with-unix-tools)to process json in the shell. We recommend [jq](https://stedolan.github.io/jq/)
-```
-
 
 ```bash
-gi_nr=24
-curl -s 'https://api.github.com/users/lambda' | jq -r '.name'
+# # install jq if not yet present
+sudo apt-get install jq
+jq --help
+```
+
+Since the shell is not made for json we [convert the output into csv](
+http://stackoverflow.com/questions/32960857/how-to-convert-arbirtrary-simple-json-to-csv-using-jq) to allow more bash-style processing of the converted GIs
+
+```bash
+gi_nr=24,323
+curl -s "http://bioinfo.mpi-cbg.de:7050/gi2acc?gi=$gi_nr" | jq -r '(.[0] | keys) as $keys | $keys, map([.[ $keys[] ]])[] | @csv'
+```
+which gives
+```
+"accession","gi","seqLength"
+"X53812.1",24,422
+"CAA32192.1",323,155
 ```
 
 
-## How to integrate with R?
+### How to use it in Kotlin?
+
+To use the service with a Kotlin client we can use [Fuel](https://github.com/kittinunf/Fuel) and [Klaxon](https://github.com/cbeust/klaxon):
+```kotlin
+import com.beust.klaxon.*
+import com.github.kittinunf.fuel.httpGet
+
+// define list of query GIs
+val gis = listOf(23,5353,34)
+
+val queryURL = "http://bioinfo.mpi-cbg.de:7050/gi2acc?gi=${gis.joinToString(",")}"
+
+val json = String(queryURL.httpGet().response().second.data)
+
+// use fuel library to call the service (see https://github.com/kittinunf/Fuel)
+val jsonArray = Parser().parse(json.byteInputStream())!! as JsonArray<*>
+
+// use klaxon library to parse the json result (see https://github.com/cbeust/klaxon)
+val idMap = jsonArray.map { (it as JsonObject) }.map { it.int("gi") to it.string("accession") }
+
+// print conversion table
+idMap.forEach { println(it) }
+```
+which gives
+```
+(23, X53811.1)
+(5353, null)
+(34, X17614.1)
+```
+
+## Summary
+
+With little effort we could build, and deploy a spring-boot application providing a REST service for GI to accession number conversion. Because of Kotlin's more flexible design we could keep things together in a single source file. We walked through different integrations using R, the shell, and Kotlin itself.
+
+Code is available unter https://github.com/holgerbrandl/gi2acc_service
 
 
 
 
 ## References
 
+* https://ncbiinsights.ncbi.nlm.nih.gov/2016/12/23/converting-lots-of-gi-numbers-to-accession-version/
 
-Self Education
-==============
-
-### write a kotlin microservice to remap gi numbers to accession
-
-https://ncbiinsights.ncbi.nlm.nih.gov/2016/12/23/converting-lots-of-gi-numbers-to-accession-version/
-
-see 
+Spring
 * http://www.thedevpiece.com/building-microservices-with-kotlin-and-springboot/
 * and to access it http://tophcito.blogspot.de/2015/11/accessing-apis-from-r-and-little-r.html
 * http://ssoudan.eu/posts/2014-12-08-kotlin-springboot.html
-* http://stackoverflow.com/questions/2346794/java-fastest-way-to-do-random-reads-on-huge-disk-files
-* db conversion of big tables https://sqlite.org/cli.html or http://stackoverflow.com/questions/20724864/convert-a-sql-table-into-a-sqlite-database
-
-https://sqlite.org/cli.html
-
-http://docs.spring.io/spring-boot/docs/current/reference/html/deployment-install.html
-
-https://spring.io/blog/2016/02/15/developing-spring-boot-applications-with-kotlin
-
-https://github.com/sdeleuze/spring-boot-kotlin-demo
 
 https://dzone.com/articles/developing-a-geospatial-webservice-with-kotlin-and?utm_medium=feed&utm_source=feedpress.me&utm_campaign=Feed:%20dzone%2Fjava

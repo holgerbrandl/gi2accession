@@ -16,11 +16,11 @@ import org.springframework.data.rest.core.annotation.RepositoryRestResource as R
  */
 
 // value type to model pythonscript output
-data class IdPair(val gi: Long, val accession: String, val seqLength: Long)
+data class IdPair(val gi: Long, val accession: String?, val seqLength: Long?)
 
 // installation dir of ncbi provided pyton script and database
 //val INSTALL_DIR = File(System.getProperty("user.home"), "projects/gi_acc")
-val INSTALL_DIR = File("/home/brandl/projects/gi_acc")
+val INSTALL_DIR = File("/local/web/files/gi2acc_service/")
 
 
 
@@ -37,11 +37,18 @@ class IdConversionController {
 
         // run the python script over the ids
         val cmd = "cat ${idListFile.absolutePath} | ${INSTALL_DIR}/gi2accession.py"
+        val result = evalBash(cmd, wd = INSTALL_DIR)
 
-        val convertedIds: List<IdPair> = evalBash(cmd, wd = INSTALL_DIR).stdout.
+        val convertedIds: List<IdPair> = result.stdout.
                 filter(String::isNotBlank).
                 map {
-                    with(it.split('\t')) { IdPair(this[0].toLong(), this[1], this[2].toLong()) }
+                    // if id was not mappable return NA instead (example 5353)
+                    if (it.contains("not found")) {
+                        IdPair(it.split(" ")[0].toLong(), null, null)
+                    } else {
+                        // example line: 34	X17614.1	1632
+                        with(it.split('\t')) { IdPair(this[0].toLong(), this[1], this[2].toLong()) }
+                    }
                 }
 
         idListFile.delete()
