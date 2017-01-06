@@ -1,11 +1,12 @@
 # NCBI GI to Accession REST service example
 
-Recently, the [NCBI retired ](https://www.ncbi.nlm.nih.gov/news/03-02-2016-phase-out-of-GI-numbers/)the well known GI numbers in favor of the more structured accession numbers. To allow users to still convert existing data, they [provide](https://ncbiinsights.ncbi.nlm.nih.gov/2016/12/23/converting-lots-of-gi-numbers-to-accession-version/) a python 40gb lmdb database along with a little python program to extract the data. However, since it's rather tedious to pull a 40gb file, and make sure to have all required python dependencies, we would like to wrap this conversion model into a small REST service.
+
+Recently, the [NCBI retired ](https://www.ncbi.nlm.nih.gov/news/03-02-2016-phase-out-of-GI-numbers/)the well known GI numbers in favor of the more structured accession numbers. To allow users to still convert existing data, they [provide](https://ncbiinsights.ncbi.nlm.nih.gov/2016/12/23/converting-lots-of-gi-numbers-to-accession-version/) a  40gb database dump along with a little python program to extract the data. However, since it's rather tedious to pull such a massive file, and to make sure to have all required python dependencies, we would like to wrap this conversion model into a small REST service. We also  discuss in this post how to integrate this microservice with R, bash and kscript. 
  
 
 ## Prepare the mapping model
 
-First, We simply pull the massive data file - which is a python [Lightning database](https://lmdb.readthedocs.io/en/release/) - to our local system and test the provided python tool to test the installation. 
+First, we  pull the massive data file - which is a python [Lightning database](https://lmdb.readthedocs.io/en/release/) - to our local system and test the provided python tool. 
 
 ```bash
 cd ~/gi_acc
@@ -28,7 +29,7 @@ pip install lmdb
 echo 42 | ./gi2accession.py 
 #> 42	CAA44840.1	416
 ```
-To avoid this tedious setup whenever we need to convert GIs, we would like to expose it via a tiny REST API.
+To avoid this tedious setup whenever we need to convert GIs, we now would like to expose it via a tiny REST API.
 
 ## Setup the REST application
 
@@ -39,7 +40,8 @@ The general concept about to get started with REST, Spring-Boot and Kotlin is de
 * http://ssoudan.eu/posts/2014-12-08-kotlin-springboot.html
 
 So essentially all we need is a single method taking one or more GIs and returning a mapping scheme:
-```{kotlin}
+
+```kotlin
 // value type to model python-script output
 data class IdPair(val gi: Long, val accession: String?, val seqLength: Long?)
 
@@ -94,13 +96,14 @@ fun main(args: Array<String>) {
 ```
 
 
-There's just a single method that accepts a list of comma/semicolon separated GIs and returns a json structure with the mapping. Unmappable IDs are mapped to NA.
+There's just a single method that accepts a list of comma/semicolon separated GIs and returns a json array with the mapping table. Unmappable IDs are mapped to `null`.
 
 We notice and welcome the surprisingly little amount of boilerplate code required to turn it into a Spring-Boot ready application. Only a specially annotated `Application` class is needed which is used as an argument to `SpringApplication.run` in the main function of the kts. Kotlin makes it possible to keep everything in a single class here.
 
 To test the app locally we can use use `http://localhost:7050/gi2acc?gi=42` or `http://localhost:7050/gi2acc?gi=123,222, 232,3` for multiple IDs.
 
 To check if also invalid GI are handled gracefully we can mix in an invalid id `http://localhost:7050/gi2acc?gi=23,5353,34`, which gives:
+
 ```json
 [
   {
@@ -166,6 +169,7 @@ Finally, we'd lik to use our new GI to accession conversion microservice. Since 
 ### How to integrate with R?
 
 Using the conversion webservice from R can be easily done using [httr](https://github.com/hadley/httr) + [dplyr](https://github.com/hadley/dplyr) mixed with a bit of [purr](https://github.com/hadley/purrr):
+
 ```r
 library(httr)
 library(tidyverse)
@@ -242,10 +246,10 @@ which gives
 (34, X17614.1)
 ```
 
-This solution could be also easily wrapped into a self-contained client-side application using [kscript](https://github.com/holgerbrandl/kscript), by just adding a dependency header and by reading the id list from the provided arguments. See here how it looks like
+This solution could be also easily wrapped into a self-contained client-side application using [kscript](https://github.com/holgerbrandl/kscript). This can be done by just adding (a) a dependency header and by (b) reading the query GI list from the provided arguments.
 
 ```bash
-## define a convenience wrapper 
+## define a convenience wrapper for the remote scriplet
 alias gi2acc="kscript https://raw.githubusercontent.com/holgerbrandl/gi2accession/master/parse_json.kts"
 
 ## use it!
@@ -257,9 +261,9 @@ gi2acc 23 324 534
 
 ## Summary
 
-With little effort we could build, and deploy a spring-boot application providing a REST service for GI to accession number conversion. Because of Kotlin's more flexible design we could keep things together in a single source file. We walked through different integrations using R, the shell, and Kotlin.
+With little effort we could build, and deploy a spring-boot application providing a REST service for GI to accession number conversion. Because of Kotlin's flexible language design we could keep things concise together in a single source file. We walked through different integrations using R, the shell, and Kotlin.
 
-The complete code is available unter https://github.com/holgerbrandl/gi2acc_service
+The complete code is available unter [https://github.com/holgerbrandl/gi2accession](https://github.com/holgerbrandl/gi2accession)
 
 The described conversion service can be used via the following URL:
 ```
@@ -267,6 +271,3 @@ http://java-srv1.mpi-cbg.de:7050/gi2acc?gi=23,5353,34
 ```
  
 Feel welcome to post comments or suggestions.
-
-
-
