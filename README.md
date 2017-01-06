@@ -1,5 +1,4 @@
-
-## Intro
+# NCBI GI to Accession REST service example
 
 Recently, the [NCBI retired ](https://www.ncbi.nlm.nih.gov/news/03-02-2016-phase-out-of-GI-numbers/)the well known GI numbers in favor of the more structured accession numbers. To allow users to still convert existing data, they [provide](https://ncbiinsights.ncbi.nlm.nih.gov/2016/12/23/converting-lots-of-gi-numbers-to-accession-version/) a python 40gb lmdb database along with a little python program to extract the data. However, since it's rather tedious to pull a 40gb file, and make sure to have all required python dependencies, we would like to wrap this conversion model into a small REST service.
  
@@ -244,32 +243,30 @@ which gives
 ```
 
 This solution could be also easily wrapped into a self-contained client-side application using [kscript](https://github.com/holgerbrandl/kscript), by just adding a dependency header and by reading the id list from the provided arguments. See here how it looks like
-```apple js
-alias gi2acc="kscript https://git.io/v1ZUY"
 
+```bash
+## define a convenience wrapper 
+alias gi2acc="kscript https://raw.githubusercontent.com/holgerbrandl/gi2accession/master/parse_json.kts"
+
+## use it!
+gi2acc 23 324 534
+#> (23, X53811.1)
+#> (324, X53689.1)
+#> (534, X67823.1)
 ```
 
 ## Summary
 
-With little effort we could build, and deploy a spring-boot application providing a REST service for GI to accession number conversion. Because of Kotlin's more flexible design we could keep things together in a single source file. We walked through different integrations using R, the shell, and Kotlin itself.
+With little effort we could build, and deploy a spring-boot application providing a REST service for GI to accession number conversion. Because of Kotlin's more flexible design we could keep things together in a single source file. We walked through different integrations using R, the shell, and Kotlin.
 
-Code is available unter https://github.com/holgerbrandl/gi2acc_service
+The complete code is available unter https://github.com/holgerbrandl/gi2acc_service
 
 The described conversion service can be used via the following URL:
 ```
 http://java-srv1.mpi-cbg.de:7050/gi2acc?gi=23,5353,34
 ```
  
+Feel welcome to post comments or suggestions.
 
-Feel welcome to post comments or suggests
 
-## References
 
-* https://ncbiinsights.ncbi.nlm.nih.gov/2016/12/23/converting-lots-of-gi-numbers-to-accession-version/
-
-Spring
-* http://www.thedevpiece.com/building-microservices-with-kotlin-and-springboot/
-* and to access it http://tophcito.blogspot.de/2015/11/accessing-apis-from-r-and-little-r.html
-* http://ssoudan.eu/posts/2014-12-08-kotlin-springboot.html
-
-https://dzone.com/articles/developing-a-geospatial-webservice-with-kotlin-and?utm_medium=feed&utm_source=feedpress.me&utm_campaign=Feed:%20dzone%2Fjava
