@@ -131,11 +131,10 @@ To deploy our micro-service into production we simply follow the spring-boot [de
 ## Build it
 gradle build
 
-## Copy to server
-scp build/libs/gi2acc_service-1.0-SNAPSHOT.jar bioinfo:~/projects/gi_acc/gi2acc_service.jar
+## Copy to server (this steo will depend on your local setup)
 scp build/libs/gi2acc_service-1.0-SNAPSHOT.jar java-srv1:/local/web/files/gi2acc_service/gi2acc_service.jar
 
-## change to deployment server target directory, and then 
+## Change to deployment server target directory, and then 
 chmod o+x gi2acc_service.jar  ## make it executable
 
 ## Use special user created with "sudo adduser bootapp" to increase app-security 
@@ -144,7 +143,7 @@ sudo chown bootapp:bootapp gi2acc_service.jar
 sudo chmod 500 gi2acc_service.jar  ## only owner can read and write
 
 
-## now we could just run it directly...
+## Now we could just run it directly...
 sudo su bootapp
 ./gi2acc_service.jar
 
@@ -154,10 +153,11 @@ sudo ln -s $(readlink -f gi2acc_service.jar) /etc/init.d/gi2acc
 
 ## start the service
 sudo service gi2acc start
+## or stop it
 sudo service gi2acc stop
 ```
 
-Test it `http://java-srv1.mpi-cbg.de:7050/gi2acc?gi=23,5353,34`
+Test the installation with simply with `curl "http://java-srv1.mpi-cbg.de:7050/gi2acc?gi=23,5353,34"` or in your [browser](http://java-srv1.mpi-cbg.de:7050/gi2acc?gi=23,5353,34).
 
 
 ## Workflow integration
@@ -192,7 +192,6 @@ idMap
 # 3   34  X17614.1
 
 ```
-
 
 ### How to use it in bash?
 
@@ -244,7 +243,7 @@ which gives
 (34, X17614.1)
 ```
 
-This solution could be also easily wrapped into client-side application using [kscript](https://github.com/holgerbrandl/kscript), by just adding a dependency header and by reading the id list from the provided arguments. Here's the gist and the alias:
+This solution could be also easily wrapped into a self-contained client-side application using [kscript](https://github.com/holgerbrandl/kscript), by just adding a dependency header and by reading the id list from the provided arguments. See here how it looks like
 ```apple js
 alias gi2acc="kscript https://git.io/v1ZUY"
 
