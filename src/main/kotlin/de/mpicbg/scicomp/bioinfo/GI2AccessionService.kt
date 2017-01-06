@@ -15,7 +15,7 @@ import org.springframework.data.rest.core.annotation.RepositoryRestResource as R
  * @author Holger Brandl
  */
 
-// value type to model pythonscript output
+// value type to model python-script output
 data class IdPair(val gi: Long, val accession: String?, val seqLength: Long?)
 
 // installation dir of ncbi provided pyton script and database

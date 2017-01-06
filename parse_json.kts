@@ -1,12 +1,21 @@
-// DEPS com.beust:klaxon:0.24, com.github.kittinunf.fuel:fuel:1.3.1
+#!/usr/bin/env kscript
+
+//DEPS com.beust:klaxon:0.24, com.github.kittinunf.fuel:fuel:1.3.1
 
 // kotlinc -cp $(expandcp.kts com.beust:klaxon:0.24 com.github.kittinunf.fuel:fuel:1.3.1)
 
 import com.beust.klaxon.*
 import com.github.kittinunf.fuel.httpGet
+import kotlin.system.exitProcess
 
-// define list of query GIs
-val gis = listOf(23, 5353, 34)
+if (args.isEmpty()) {
+    println("Usage: gi2acc <gi_nr>+")
+    exitProcess(-1)
+}
+
+val gis = args.map { it.toInt() }
+
+//val gis = listOf(23, 5353, 34)
 
 val queryURL = "http://bioinfo.mpi-cbg.de:7050/gi2acc?gi=${gis.joinToString(",")}"
 
